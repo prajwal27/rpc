@@ -25,7 +25,7 @@ main() {
         new File(join(srcPath, fileName)).copySync(join(dstPath, fileName)));
   }
 
-  String packagePath;
+  String? packagePath;
 
   // Creates a package directory with a lib directory and an optional pubspec
   // file.
@@ -33,22 +33,22 @@ main() {
     assert(packagePath == null);
     packagePath =
         Directory.systemTemp.createTempSync('rpc_generator_tests').path;
-    new Directory(join(absolute(packagePath), 'lib')).createSync();
+    new Directory(join(absolute(packagePath!), 'lib')).createSync();
     if (addPubSpec) {
       var source = new File(join(dataPath, 'pubspec.yamll')).readAsStringSync();
-      var destFile = new File(join(absolute(packagePath), 'pubspec.yaml'));
+      var destFile = new File(join(absolute(packagePath!), 'pubspec.yaml'));
       destFile
           .writeAsStringSync(source.replaceAll('_path_to_rpc_', rpcRootPath));
     }
   }
 
-  ProcessResult runPub(String workingDir, List<String> arguments) {
+  ProcessResult? runPub(String? workingDir, List<String> arguments) {
     // We assume pub is placed next to the dart executable.
     var pubDir = new File(Platform.executable).parent;
     var pub = join(absolute(pubDir.path), 'pub');
     var pubFile = new File(pub);
     if (!pubFile.existsSync() && !Platform.isWindows) {
-      pubDir = new File(Platform.environment['_']).parent;
+      pubDir = new File(Platform.environment['_']!).parent;
       pub = join(absolute(pubDir.path), 'pub');
       pubFile = new File(pub);
     }
@@ -58,11 +58,11 @@ main() {
     return null;
   }
 
-  ProcessResult runGenerator(String workingDir, List<String> arguments) {
+  ProcessResult? runGenerator(String? workingDir, List<String> arguments) {
     var args = [join(rpcRootPath, 'bin', 'generate.dart')]..addAll(arguments);
     var dartFile = new File(Platform.executable);
     if (!dartFile.existsSync() && !Platform.isWindows) {
-      dartFile = new File(Platform.environment['_']);
+      dartFile = new File(Platform.environment['_']!);
     }
     if (dartFile.existsSync()) {
       return Process.runSync(dartFile.path, args, workingDirectory: workingDir);
@@ -78,7 +78,7 @@ main() {
 
   tearDown(() {
     if (packagePath != null) {
-      var dir = new Directory(packagePath);
+      var dir = new Directory(packagePath!);
       if (dir.existsSync()) {
         try {
           dir.deleteSync(recursive: true);
@@ -93,7 +93,7 @@ main() {
   group('rpc-generator-correct', () {
     test('multipleApis-discovery', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, [
         'multipleApis.dart',
         'multipleApisMessages.dart',
@@ -119,7 +119,7 @@ main() {
 
     test('multipleApis-client', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, [
         'multipleApis.dart',
         'multipleApisMessages.dart',
@@ -147,7 +147,7 @@ main() {
 
     test('toyApi-discovery', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, ['toyapi.dart']);
       var result = runPub(packagePath, ['get']);
       if (result == null) {
@@ -169,7 +169,7 @@ main() {
 
     test('toyApi-client', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, ['toyapi.dart']);
       var result = runPub(packagePath, ['get']);
       if (result == null) {
@@ -192,7 +192,7 @@ main() {
   group('rpc-generator-failing', () {
     test('wrong-api-file', () {
       setupPackage();
-      var fileName = join(packagePath, 'lib', 'toyapi.dart');
+      var fileName = join(packagePath!, 'lib', 'toyapi.dart');
       var result = runGenerator(packagePath, ['discovery', '-i', fileName]);
       if (result == null) {
         print('Could not find dart.');
@@ -204,9 +204,9 @@ main() {
 
     test('part-api-file', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, ['libraryWithPart.dart', 'partApi.dart']);
-      var fileName = join(packagePath, 'lib', 'partApi.dart');
+      var fileName = join(packagePath!, 'lib', 'partApi.dart');
       var result = runPub(packagePath, ['get']);
       if (result == null) {
         print('Could not find pub.');
@@ -226,7 +226,7 @@ main() {
 
     test('no-pub-spec', () {
       setupPackage(addPubSpec: false);
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, ['toyapi.dart']);
       var result = runGenerator(
           packagePath, ['client', '-i', join(libPath, 'toyapi.dart')]);
@@ -239,7 +239,7 @@ main() {
 
     test('no-pub-get', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, ['toyapi.dart']);
       var result = runGenerator(
           packagePath, ['client', '-i', join(libPath, 'toyapi.dart')]);
@@ -255,7 +255,7 @@ main() {
 
     test('no-default-constructor', () {
       setupPackage();
-      var libPath = join(packagePath, 'lib');
+      var libPath = join(packagePath!, 'lib');
       copyFiles(dataPath, libPath, ['noDefaultConstructorApi.dart']);
       var result = runPub(packagePath, ['get']);
       if (result == null) {

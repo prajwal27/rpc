@@ -5,6 +5,7 @@
 library multipleapis_resources;
 
 import 'package:rpc/src/annotations.dart';
+
 import 'multipleApisMessages.dart';
 
 class ApiTwoResource {

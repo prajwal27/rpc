@@ -21,13 +21,13 @@ typedef Future HttpRequestHandler(io.HttpRequest request);
 /// The main class for handling all API requests.
 class ApiServer {
   final String _apiPrefix;
-  String _discoveryApiKey;
+  String? _discoveryApiKey;
 
-  Converter<Object, dynamic> _jsonToBytes;
+  late Converter<Object?, dynamic> _jsonToBytes;
 
   final Map<String, ApiConfig> _apis = {};
 
-  ApiServer({String apiPrefix, bool prettyPrint: false})
+  ApiServer({String? apiPrefix, bool prettyPrint: false})
       : _apiPrefix = apiPrefix != null ? apiPrefix : '' {
     _jsonToBytes = prettyPrint
         ? new JsonEncoder.withIndent(' ').fuse(utf8.encoder)
@@ -36,32 +36,35 @@ class ApiServer {
 
   /// Getter for a simple dart:io HttpRequest handler.
   HttpRequestHandler get httpRequestHandler => (io.HttpRequest request) async {
-        var apiResponse;
-        try {
-          if (!request.uri.path.startsWith(_apiPrefix)) {
-            await request.drain();
-            apiResponse = new HttpApiResponse.error(
-                io.HttpStatus.notImplemented,
-                'Invalid request for path: ${request.uri.path}',
-                null,
-                null);
-          } else {
-            var apiRequest = new HttpApiRequest.fromHttpRequest(request);
-            apiResponse = await handleHttpApiRequest(apiRequest);
-          }
-        } catch (error, stack) {
-          var exception = error;
-          if (exception is Error) {
-            exception = new Exception(exception.toString());
-          }
-          apiResponse = new HttpApiResponse.error(
-              io.HttpStatus.internalServerError,
-              exception.toString(),
-              exception,
-              stack);
-        }
-        return sendApiResponse(apiResponse, request.response);
-      };
+    var apiResponse;
+    try {
+      if (!request.uri.path.startsWith(_apiPrefix)) {
+        await request.drain();
+        apiResponse = new HttpApiResponse.error(
+            io.HttpStatus.notImplemented,
+            'Invalid request for path: ${request.uri.path}',
+            null,
+            null);
+      } else {
+        var apiRequest = new HttpApiRequest.fromHttpRequest(request);
+        apiResponse = await handleHttpApiRequest(apiRequest);
+      }
+    } catch (error, stack) {
+      var exception = error;
+      if (exception is Error) {
+        exception = new Exception(exception.toString());
+      }
+
+      exception as Exception;
+
+      apiResponse = new HttpApiResponse.error(
+          io.HttpStatus.internalServerError,
+          exception.toString(),
+          exception,
+          stack);
+    }
+    return sendApiResponse(apiResponse, request.response);
+  };
 
   /// Add a new api to the API server.
   String addApi(api) {
@@ -106,10 +109,10 @@ class ApiServer {
       // Parse the request to compute some of the values needed to determine
       // which method to invoke.
       var parsedRequest =
-          new ParsedHttpApiRequest(request, _apiPrefix, _jsonToBytes);
+      new ParsedHttpApiRequest(request, _apiPrefix, _jsonToBytes);
 
       // The api key is the first two path segments.
-      ApiConfig api = _apis[parsedRequest.apiKey];
+      ApiConfig? api = _apis[parsedRequest.apiKey];
       if (api == null) {
         return httpErrorResponse(request,
             new NotFoundError('No API with key: ${parsedRequest.apiKey}.'));
@@ -132,6 +135,9 @@ class ApiServer {
       if (exception is Error) {
         exception = new Exception(e.toString());
       }
+
+      exception as Exception;
+
       response = httpErrorResponse(request, exception,
           stack: stack, drainRequest: drain);
     }
@@ -183,7 +189,7 @@ Future sendApiResponse(HttpApiResponse apiResponse, io.HttpResponse response) {
   apiResponse.headers
       .forEach((name, value) => response.headers.add(name, value));
   if (apiResponse.body != null) {
-    return apiResponse.body.pipe(response);
+    return apiResponse.body!.pipe(response);
   } else {
     return response.close();
   }
