@@ -8,19 +8,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:mirrors';
-import 'package:crypto/crypto.dart';
+
 import 'package:convert/convert.dart';
+import 'package:crypto/crypto.dart';
 import 'package:gcloud/service_scope.dart' as ss;
-import 'package:uri/uri.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:uri/uri.dart';
 
 import 'context.dart';
-import 'errors.dart';
-import 'message.dart';
-import 'utils.dart';
 import 'discovery/config.dart' as discovery;
+import 'errors.dart';
 import 'http_body_parser.dart';
 import 'media_message.dart';
+import 'message.dart';
+import 'utils.dart';
 
 part 'config/api.dart';
 part 'config/method.dart';
@@ -95,7 +96,7 @@ class ParsedHttpApiRequest {
     var methodKey = '${request.httpMethod}${methodPathSegments.length}';
     var methodUri = Uri.parse(methodPathSegments.join('/'));
 
-    late ContentType contentType;
+    ContentType contentType = ContentType.text;
     if (request.headers.containsKey(HttpHeaders.contentTypeHeader)) {
       final header = request.headers[HttpHeaders.contentTypeHeader];
 
