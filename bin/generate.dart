@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+
 import 'package:args/args.dart';
 import 'package:discoveryapis_generator/clientstub_generator.dart';
 import 'package:path/path.dart';
@@ -384,8 +385,9 @@ class ClientApiGenerator {
         }
         Map<String, String> importMap = {};
         parser.apiSchemas.forEach((name, schemaConfig) {
+          print('psp');
           importMap[name] =
-              schemaConfig.schemaClass.location.sourceUri.toString();
+              schemaConfig.schemaClass.location?.sourceUri.toString();
         });
         result[document] = importMap;
       }
