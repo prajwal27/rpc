@@ -128,13 +128,12 @@ class ParsedHttpApiRequest {
 /// Helper class describing a method parameter.
 class ApiParameter {
   final String name;
-  late Symbol symbol;
-  late bool isInt;
-  late bool isBool;
+  final Symbol symbol;
+  final bool isInt;
+  final bool isBool;
 
-  ApiParameter(this.name, ParameterMirror pm) {
-    this.symbol = pm.simpleName;
-    isInt = pm.type == reflectType(int);
-    isBool = pm.type == reflectType(bool);
-  }
+  ApiParameter(this.name, ParameterMirror pm)
+      : symbol = pm.simpleName,
+        isInt = pm.type == reflectType(int),
+        isBool = pm.type == reflectType(bool);
 }
