@@ -55,32 +55,58 @@ class ConfigSchema<D, J> extends ApiConfigSchema<D, J> {
 
   D fromRequest(J request) {
     if (request is Map) {
-      InstanceMirror schema = schemaClass.newInstance(new Symbol(''), []);
+      // new code
+      final namedArguments = <Symbol, dynamic>{};
+
+      // old code
+      //InstanceMirror schema = schemaClass.newInstance(new Symbol(''), []);
       for (Symbol sym in _properties.keys) {
         final ApiConfigSchemaProperty prop = _properties[sym]!;
         try {
           if (request.containsKey(prop.name)) {
             final requestForSymbol = request[prop.name];
+
+            namedArguments[sym] = requestForSymbol;
+
             // MediaMessage special case
             if (requestForSymbol is MediaMessage ||
                 requestForSymbol is List<MediaMessage>) {
-              // If in form, there is an (input[type="file"] multiple) and the user
-              // put only one file. It's not an error and it should be accept.
-              // Maybe it cans be optimized.
-              if (schema.type.instanceMembers[sym]!.returnType.reflectedType ==
-                  _listOfMediaMessage &&
+              // // If in form, there is an (input[type="file"] multiple) and the user
+              // // put only one file. It's not an error and it should be accept.
+              // // Maybe it cans be optimized.
+              // if (schema.type.instanceMembers[sym]!.returnType.reflectedType ==
+              //         _listOfMediaMessage &&
+              //     requestForSymbol is MediaMessage) {
+              //   schema.setField(sym, [requestForSymbol]);
+              // } else if (requestForSymbol is List) {
+              //   schema.setField(sym, prop.fromRequest(requestForSymbol));
+              // } else {
+              //   schema.setField(sym, requestForSymbol);
+              // }
+
+              // new code
+              if (schemaClass.instanceMembers[sym]!.returnType.reflectedType ==
+                      _listOfMediaMessage &&
                   requestForSymbol is MediaMessage) {
-                schema.setField(sym, [requestForSymbol]);
+                namedArguments[sym] = [requestForSymbol];
               } else if (requestForSymbol is List) {
-                schema.setField(sym, prop.fromRequest(requestForSymbol));
+                namedArguments[sym] = prop.fromRequest(requestForSymbol);
               } else {
-                schema.setField(sym, requestForSymbol);
+                namedArguments[sym] = requestForSymbol;
               }
             } else {
-              schema.setField(sym, prop.fromRequest(requestForSymbol));
+              // old code
+              // schema.setField(sym, prop.fromRequest(requestForSymbol));
+
+              // new code
+              namedArguments[sym] = prop.fromRequest(requestForSymbol);
             }
           } else if (prop.hasDefault) {
-            schema.setField(sym, prop.fromRequest(prop.defaultValue));
+            // old code
+            //  schema.setField(sym, prop.fromRequest(prop.defaultValue));
+
+            // new code
+            namedArguments[sym] = prop.fromRequest(prop.defaultValue);
           } else if (prop.required) {
             throw new BadRequestError('Required field ${prop.name} is missing');
           }
@@ -88,11 +114,13 @@ class ConfigSchema<D, J> extends ApiConfigSchema<D, J> {
           throw BadRequestError('Field ${prop.name} has wrong type:  ${e}');
         }
       }
+      InstanceMirror schema =
+          schemaClass.newInstance(new Symbol(''), [], namedArguments);
       return schema.reflectee;
     }
     throw new BadRequestError(
         'Invalid parameter: \'$request\', should be an instance of type '
-            '\'$schemaName\'.');
+        '\'$schemaName\'.');
   }
 
   J toResponse(D result) {

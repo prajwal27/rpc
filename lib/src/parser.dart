@@ -70,7 +70,7 @@ class ApiParser {
   // Otherwise returns null.
   dynamic _getMetadata(DeclarationMirror dm, Type apiType) {
     var annotations =
-    dm.metadata.where((a) => a.reflectee.runtimeType == apiType).toList();
+        dm.metadata.where((a) => a.reflectee.runtimeType == apiType).toList();
     if (annotations.length == 0) {
       return null;
     } else if (annotations.length > 1) {
@@ -151,7 +151,7 @@ class ApiParser {
       // class.
       var resourceInstance = classInstance.getField(dm.simpleName);
       ApiConfigResource resourceConfig =
-      parseResource(fieldName, resourceInstance, metadata);
+          parseResource(fieldName, resourceInstance, metadata);
       if (resources.containsKey(resourceConfig.name)) {
         addError('Duplicate resource with name: ${resourceConfig.name}');
       } else {
@@ -321,7 +321,7 @@ class ApiParser {
       if (methodParamName != pathParamName) {
         addError(
             'Expected method parameter with name \'$pathParamName\', but found'
-                ' parameter with name \'$methodParamName\'.');
+            ' parameter with name \'$methodParamName\'.');
       }
       if (pm.isOptional || pm.isNamed) {
         addError('No support for optional path parameters in API methods.');
@@ -508,7 +508,7 @@ class ApiParser {
           schemaClass.originalDeclaration) {
         var newSchemaName = MirrorSystem.getName(schemaClass.qualifiedName);
         var existingSchemaName =
-        MirrorSystem.getName(schemaConfig.schemaClass.qualifiedName);
+            MirrorSystem.getName(schemaConfig.schemaClass.qualifiedName);
         addError('Schema \'$newSchemaName\' has a name conflict with '
             '\'$existingSchemaName\'.');
         _popId();
@@ -523,7 +523,7 @@ class ApiParser {
       // reflection.
       if (schemaConfig.isUsedForRequest || !isRequest) {
         assert(
-        schemaConfig.propertiesInitialized || !schemaConfig.containsData);
+            schemaConfig.propertiesInitialized || !schemaConfig.containsData);
         _popId();
         return schemaConfig;
       }
@@ -532,17 +532,30 @@ class ApiParser {
     // If the schema is used as a request check that it has an unnamed default
     // constructor.
     if (isRequest) {
-      var methods = schemaClass.declarations.values
+      final methods = schemaClass.declarations.values
           .whereType<MethodMirror>()
-          .where((mm) => mm.isConstructor);
-      if (!methods.isEmpty &&
-          methods
-              .where((mm) => (mm.simpleName == schemaClass.simpleName &&
-              mm.parameters.isEmpty))
-              .isEmpty) {
-        addError('Schema \'$name\' must have an unnamed constructor taking no '
-            'arguments.');
+          .where((mm) =>
+              mm.isConstructor && mm.simpleName == schemaClass.simpleName);
+      if (methods.length != 1) {
+        addError(
+            'Schema \'$name\' must have one unnamed constructor with all properties as named arguments.');
       }
+
+      final constr = methods.first;
+      final variables =
+          schemaClass.declarations.values.whereType<VariableMirror>();
+
+      variables.forEach((variable) {
+        final hasNamedParam = constr.parameters
+            .where((element) =>
+                element.isNamed && element.simpleName == variable.simpleName)
+            .isNotEmpty;
+
+        if (!hasNamedParam) {
+          addError(
+              'Schema \'$name\' must have a named constructor argument for ${variable.simpleName}.');
+        }
+      });
     }
     schemaConfig = new ConfigSchema(name, schemaClass, isRequest);
 
@@ -592,8 +605,8 @@ class ApiParser {
       }
     }
     ClassMirror namedListSchema = reflectType(
-        NamedListSchema, [schemaClass.typeArguments[0].reflectedType])
-    as ClassMirror;
+            NamedListSchema, [schemaClass.typeArguments[0].reflectedType])
+        as ClassMirror;
     var schemaConfig = namedListSchema.newInstance(
         const Symbol(''), [name, schemaClass, isRequest]).reflectee;
     // We put in the schema before parsing properties to detect cycles.
@@ -639,8 +652,8 @@ class ApiParser {
     }
 
     ClassMirror namedMapSchema = reflectType(
-        NamedMapSchema, [schemaClass.typeArguments[1].reflectedType])
-    as ClassMirror;
+            NamedMapSchema, [schemaClass.typeArguments[1].reflectedType])
+        as ClassMirror;
     var schemaConfig = namedMapSchema.newInstance(
         const Symbol(''), [name, schemaClass, isRequest]).reflectee;
     // We put in the schema before parsing properties to detect cycles.
@@ -999,8 +1012,8 @@ class ApiParser {
     _checkValidFields(propertyName, propertyTypeName, metadata, []);
     var schema = parseSchema(schemaTypeMirror, isRequest);
     ClassMirror schemaProperty =
-    reflectType(SchemaProperty, [schemaTypeMirror.reflectedType])
-    as ClassMirror;
+        reflectType(SchemaProperty, [schemaTypeMirror.reflectedType])
+            as ClassMirror;
     return schemaProperty.newInstance(const Symbol(''), [
       propertyName,
       metadata.description,
@@ -1029,7 +1042,7 @@ class ApiParser {
     if (listPropertyType.originalDeclaration != reflectClass(List)) {
       listTypeArguments = listPropertyType.superinterfaces
           .firstWhere((interface) =>
-      interface.originalDeclaration == reflectClass(List))
+              interface.originalDeclaration == reflectClass(List))
           .typeArguments;
     } else {
       listTypeArguments = _TypeArgumentsForBaseClass<List>(listPropertyType);
