@@ -341,7 +341,7 @@ class ClientApiGenerator {
       var lm = currentMirrorSystem().libraries[Uri.parse(apiFilePath)];
       if (lm == null) {
         print('Could not find a Dart library for the given input file '
-              '\\'\$apiFilePath\\'. The given file must be a Dart library');
+            '\\'\$apiFilePath\\'. The given file must be a Dart library');
         exit(1);
       }
 
@@ -380,61 +380,68 @@ class ClientApiGenerator {
         var parser = new ApiParser(strict: true);
         var apiConfig = parser.parse(api);
         if (!parser.isValid) {
-          throw \'RPC: Failed to parse API.\\n\\n\${apiConfig.apiKey}:\\n\' +
-                 parser.errors.join(\'\\n\') + \'\\n\';
-        }
-        Map<String, String> importMap = {};
-        parser.apiSchemas.forEach((name, schemaConfig) {
-          print('psp');
-          importMap[name] =
-              schemaConfig.schemaClass.location?.sourceUri.toString();
-        });
-        result[document] = importMap;
+      throw \'RPC: Failed to parse API.\\n\\n\${apiConfig.apiKey}:\\n\' +
+      parser.errors.join(\'\\n\') + \'\\n\';
+      }
+      Map<String, String> importMap = {};
+      parser.apiSchemas.forEach((name, schemaConfig) {
+      print('psp');
+      String? sourceUri = schemaConfig.schemaClass.location?.sourceUri.toString();
+      if(sourceUri != null) {
+        importMap[name] = sourceUri;
+      }
+    
+      });
+      result[document] = importMap;
       }
       return result;
     }
-
+    
     // Generate Discovery Document(s) for all ApiClass classes found in the
     // given library.
     Future<List<String>> generateDiscovery(LibraryMirror lm,
-                                           int apiPort,
-                                           String apiPrefix) async {
+        int apiPort,
+        String apiPrefix) async {
       var result = <String>[];
       for (var dm in lm.declarations.values) {
         var api = _validateAndCreateApiInstance(dm);
         if (api == null) continue;
-
+    
         String document = await _generateDocument(api, apiPort, apiPrefix);
         result.add(document);
       }
       return result;
     }
-
+    
     Future<String> _generateDocument(dynamic apiInstance,
-                                     int apiPort,
-                                     String apiPrefix) async {
+        int apiPort,
+        String apiPrefix) async {
       // Create an ApiServer to use for generating the Discovery Document.
       var server = new ApiServer(apiPrefix: apiPrefix, prettyPrint: true)
-          ..enableDiscoveryApi()
-          ..addApi(apiInstance);
+        ..enableDiscoveryApi()
+        ..addApi(apiInstance);
       List<String> apis = server.apis;
       assert(apis.length == 2);
       var path = '\$apiPrefix/discovery/v1/apis\${apis[1]}/rest';
       Uri uri = Uri.parse('http://localhost:\$apiPort/\$path');
       var request =
-          new HttpApiRequest('GET', uri, {}, new Stream.fromIterable([]));
+      new HttpApiRequest('GET', uri, {}, new Stream.fromIterable([]));
       HttpApiResponse response = await server.handleHttpApiRequest(request);
-      return response.body.transform(utf8.decoder).join('');
+      if(response.body != null) {
+        return response.body!.transform(utf8.decoder).join('');
+      }
+      return 'Null';
+    
     }
-
+    
     // Checks if the DeclarationMirror is a class and annotated with @ApiClass.
     // If so creates an instance and returns it.
     dynamic _validateAndCreateApiInstance(DeclarationMirror dm) {
       // Determine if this declaration is an API class (e.g. a class annotated
       // with @ApiClass).
       var annotations = dm.metadata.where(
-          (a) => a.reflectee.runtimeType == ApiClass).toList();
-
+              (a) => a.reflectee.runtimeType == ApiClass).toList();
+    
       var apiInstance;
       if (dm is ClassMirror && annotations.length == 1) {
         // We only support automatic generation of client stubs using same
@@ -445,8 +452,8 @@ class ClientApiGenerator {
         } catch (e) {
           var className = MirrorSystem.getName(dm.simpleName);
           print('Failed to create an instance of the API class '
-                '\\'\$className\\'. For the generator to work the class must '
-                'have a working default constructor taking no arguments.');
+              '\\'\$className\\'. For the generator to work the class must '
+              'have a working default constructor taking no arguments.');
           exit(1);
         }
       }
